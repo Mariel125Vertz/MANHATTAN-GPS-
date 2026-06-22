@@ -1,0 +1,164 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>GPS - Rutas seguras</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/estilos.css') }}">
+</head>
+<body>
+    <main id="mapa" aria-label="Mapa de rutas"></main>
+
+    <button id="botonAbrirPanel" class="floating-menu hidden" type="button" aria-label="Abrir panel">☰</button>
+
+    <aside id="panelControl" class="panel">
+        <header id="cabeceraPanel" class="panel-header">
+            <div class="panel-header-text">
+                <span class="drag-dots" aria-hidden="true"><span></span><span></span><span></span></span>
+                <div>
+                    <p class="eyebrow">mariloks</p>
+                    <h1>---Rutas seguras GPS-----</h1>
+                </div>
+            </div>
+            <button id="botonCerrarPanel" class="icon-button" type="button" aria-label="Ocultar panel">✕</button>
+        </header>
+
+        <div class="panel-body">
+        <section class="form-section">
+            <label for="entradaOrigen">Sales de:</label>
+            <div class="input-row">
+                <span class="point point-a">A</span>
+                <input id="entradaOrigen" type="text" autocomplete="off" placeholder="Dirección o lugar de salida">
+                <button id="botonLimpiarOrigen" class="clear-button" type="button" aria-label="Limpiar origen">×</button>
+            </div>
+
+            <label for="entradaDestino">Vas a:</label>
+            <div class="input-row">
+                <span class="point point-b">B</span>
+                <input id="entradaDestino" type="text" autocomplete="off" placeholder="Dirección o lugar de llegada">
+                <button id="botonLimpiarDestino" class="clear-button" type="button" aria-label="Limpiar destino">×</button>
+            </div>
+
+            <div class="stack">
+                <label for="selectorVehiculo">TRANSPORTE</label>
+                <select id="selectorVehiculo">
+                    <option value="GASOLINE">Auto</option>
+                    <option value="TRUCK">Camión</option>
+                </select>
+
+                <label for="entradaRendimiento">Cuánto rinde por litro (km)</label>
+                <input id="entradaRendimiento" type="number" min="1" max="100" step="0.1" value="{{ rendimiento_predeterminado }}">
+            </div>
+
+
+            <div class="button-row">
+                <button id="botonCalcular" class="primary-button" type="button">Vamos</button>
+                <button id="botonLimpiarTodo" class="secondary-button" type="button">Reiniciar</button>
+            </div>
+        </section>
+
+        <section class="zones-toolbar">
+            <button id="botonAlternarZonas" class="danger-light-button" type="button">Zonas Peligrosas</button>
+            <button id="botonAgregarZona" class="secondary-button" type="button">Nueva zona</button>
+        </section>
+
+        <div id="cajaMensaje" class="message hidden" role="status"></div>
+
+        <section id="panelResultados" class="results hidden">
+            <div class="results-title">
+                <h2>Caracteristicas</h2>
+                <span id="insigniaAdvertenciaZona" class="warning-badge hidden">Zona de riesgo</span>
+            </div>
+
+            <div class="metric-grid">
+                <article class="metric"><span>Distancia</span><strong id="valorDistancia">0 km</strong></article>
+                <article class="metric"><span>Tiempo</span><strong id="valorDuracion">0 min</strong></article>
+                <article class="metric"><span>Litros</span><strong id="valorLitros">0 L</strong></article>
+                <article class="metric"><span>Gasolina</span><strong id="valorCostoCombustible">$0</strong></article>
+                <article class="metric"><span>Casetas</span><strong id="valorCostoPeajes">$0</strong></article>
+                <article class="metric total"><span>Total</span><strong id="valorCostoTotal">$0</strong></article>
+            </div>
+
+            <p id="descripcionRuta" class="route-description"></p>
+
+            <div id="resultadoZonasRojas" class="result-block hidden">
+                <h3>Pasarás cerca de</h3>
+                <ul id="listaZonasRojas"></ul>
+            </div>
+
+            <div id="resultadoPeajes" class="result-block">
+                <h3>Casetas en el camino</h3>
+                <div id="listaPeajes" class="tolls-list"></div>
+            </div>
+        </section>
+        </div>
+    </aside>
+
+    <dialog id="dialogoZona" class="zone-dialog">
+        <form id="formularioZona" method="dialog">
+            <input id="idZona" type="hidden">
+            <header class="dialog-header">
+                <div>
+                    <p class="eyebrow">Administración</p>
+                    <h2 id="tituloDialogoZona">Nueva zona de riesgo</h2>
+                </div>
+                <button id="botonCerrarDialogoZona" class="icon-button" type="button">✕</button>
+            </header>
+
+            <label for="nombreZona">¿Cómo se llama el lugar?</label>
+            <input id="nombreZona" type="text" maxlength="180" required>
+
+            <div class="two-columns">
+                <div>
+                    <label for="municipioZona">Municipio</label>
+                    <input id="municipioZona" type="text" maxlength="180">
+                </div>
+                <div>
+                    <label for="estadoZona">Estado</label>
+                    <input id="estadoZona" type="text" maxlength="180">
+                </div>
+            </div>
+
+            <label for="riesgosZona">¿Qué riesgos hay? (separados por coma)</label>
+            <input id="riesgosZona" type="text" maxlength="400" placeholder="Robo, asalto, extorsión">
+
+            <label for="descripcionZona">Detalles</label>
+            <textarea id="descripcionZona" maxlength="800" rows="3"></textarea>
+
+            <div class="two-columns">
+                <div>
+                    <label for="latitudZona">Latitud</label>
+                    <input id="latitudZona" type="number" min="-90" max="90" step="any" required>
+                </div>
+                <div>
+                    <label for="longitudZona">Longitud</label>
+                    <input id="longitudZona" type="number" min="-180" max="180" step="any" required>
+                </div>
+            </div>
+
+            <label for="radioZona">Radio de la zona (metros)</label>
+            <input id="radioZona" type="number" min="50" max="50000" step="50" value="500" required>
+
+            <p id="estadoFormularioZona" class="small-text"></p>
+
+            <footer class="dialog-actions">
+                <button id="botonEliminarZona" class="danger-button hidden" type="button">Eliminar</button>
+                <span class="dialog-spacer"></span>
+                <button id="botonCancelarZona" class="secondary-button" type="button">Cancelar</button>
+                <button class="primary-button" type="submit">Guardar</button>
+            </footer>
+        </form>
+    </dialog>
+
+    <script src="{{ url_for('static', filename='js/aplicacion.js') }}"></script>
+    <script src="{{ url_for('static', filename='js/panel-arrastrable.js') }}"></script>
+    <script src="{{ url_for('static', filename='js/panel-arrastrable.js') }}"></script>
+    <script src="{{ url_for('static', filename='js/mapa.js') }}"></script>
+    <script src="{{ url_for('static', filename='js/zonas.js') }}"></script>
+    <script
+        src="https://maps.googleapis.com/maps/api/js?key={{ clave_api_google }}&loading=async&libraries=places,geometry&callback=iniciarMapa"
+        async
+        defer>
+    </script>
+</body>
+</html>
